@@ -1,0 +1,79 @@
+spring:
+  application:
+    name: exchange-rate-proxy-service
+settings:
+  web-client:
+    timeout: 61s #61ms
+    exchange-rate:
+      base-url: https://181bb4e7-9a16-4003-ac26-8480d53cecb1.mock.pstmn.io
+      x-api-key: dummy-123
+      currency-api:
+        url: /list
+      conversion-api:
+        url: /mock1
+      history-api:
+        url: /mock2
+
+logging:
+  level:
+    root: INFO
+    com.company.team.squad.exchangerateproxyservice.common.config.WebClientConfig: DEBUG
+
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 10
+      minimumNumberOfCalls: 5
+      permittedNumberOfCallsInHalfOpenState: 3
+      waitDurationInOpenState: 5s
+      failureRateThreshold: 50
+      recordExceptions:
+        - org.springframework.web.client.HttpServerErrorException
+        - java.util.concurrent.TimeoutException
+        - java.io.IOException
+        - com.company.team.squad.exchangerateproxyservice.common.exception.UnhandledException
+  instances:
+    currency:
+      baseConfig: default
+    conversion:
+      baseConfig: default
+
+resilience4j.retry:
+  configs:
+    default:
+      maxAttempts: 3
+      waitDuration: 100ms
+      retryExceptions:
+        - org.springframework.web.client.HttpServerErrorException
+        - java.io.IOException
+        - com.company.team.squad.exchangerateproxyservice.common.exception.ServiceBadGatewayException
+  instances:
+    currency:
+      baseConfig: default
+    conversion:
+      baseConfig: default
+
+resilience4j.ratelimiter:
+  configs:
+    default:
+      limitForPeriod: 10 #1
+      limitRefreshPeriod: 1s #600s
+      timeoutDuration: 0
+  instances:
+    currency:
+      baseConfig: default
+    conversion:
+      limitForPeriod: 6
+      limitRefreshPeriod: 500ms
+      timeoutDuration: 3s
+
+resilience4j.timelimiter:
+  configs:
+    default:
+      cancelRunningFuture: true
+      timeoutDuration: 61s #61ms
+  instances:
+    currency:
+      baseConfig: default
+    conversion:
+      baseConfig: default
